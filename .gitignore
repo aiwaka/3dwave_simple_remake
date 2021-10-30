@@ -1,0 +1,11 @@
+*
+!*/
+!*.*
+.DS_Store
+*.mod
+*.dSYM
+*.dat
+mesh/
+*.pdf
+*.png
+*.jpg
