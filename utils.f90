@@ -75,4 +75,28 @@ contains
             enddo
         enddo        
     end subroutine calc_tnh
+
+    subroutine calc_xyz(point, elem, yt, yn, yh, x, y, z, ALMOST0)
+        ! xの1,3,5と2,4,6が各点の座標セットになっている.
+        REAL(real64),INTENT(IN) :: point(3), elem(3,3), yt(3,3), yh(3), yn(3,3), ALMOST0
+        REAL(real64),INTENT(INOUT) :: x(6), y(3), z
+        INTEGER :: axis_num, jm1, k
+        REAL(real64) :: temp(3)
+
+        z = dot_product(point(:)-elem(:,1), yh(:))
+        if (abs(z) < ALMOST0) z = abs(z)  ! 数値誤差で表裏が入れ替わるのを防ぎ, 小さいときは正であることを保証する
+        do axis_num = 1, 3
+            ! note: 2*jm1は6,2,4
+            jm1=axis_num - 1 + int((4-axis_num)/3)*3
+            x(2*axis_num-1) = 0.0d0
+            x(2*jm1) = 0.0d0
+            y(axis_num) = dot_product(point(:)-elem(:,axis_num), yn(:,axis_num))
+            do k = 1, 3
+                temp(k)=point(k)-elem(k,axis_num)
+                x(2*axis_num-1)=x(2*axis_num-1)+temp(k)*yt(k,axis_num)
+                x(2*jm1)=x(2*jm1)+temp(k)*yt(k,jm1)
+            end do
+        end do
+
+    end subroutine calc_xyz
 end module utils
