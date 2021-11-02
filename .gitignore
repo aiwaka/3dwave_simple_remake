@@ -5,6 +5,7 @@
 *.mod
 *.dSYM
 *.dat
+fort.*
 mesh/
 *.pdf
 *.png
