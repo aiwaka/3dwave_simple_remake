@@ -97,6 +97,50 @@ contains
                 x(2*jm1)=x(2*jm1)+temp(k)*yt(k,jm1)
             end do
         end do
-
     end subroutine calc_xyz
+
+    subroutine calc_sd_tconst(pm, x, y, z, s_layer,d_layer)
+        REAL(real64),INTENT(IN) :: pm, x, y, z
+        REAL(real64),INTENT(INOUT) :: s_layer, d_layer
+        REAL(real64) :: temp1, temp2, r, ay
+        r = sqrt(x**2+y**2+z**2)
+        ay = abs(y)
+
+        temp1 = sign(1.0d0, y)*datan2(x*z, ay*r)
+        temp2 = sign(1.0d0, y)*datan2(-x, ay)
+        s_layer = s_layer + pm*(-z*temp1-y*log(x+r)-abs(z)*temp2)
+        d_layer = d_layer + pm*(temp1+sign(1.0d0, z)*temp2)
+    
+    end subroutine calc_sd_tconst
+
+    subroutine calc_s_d_layer(tc,x,y,z,s_layer,d_layer)
+        REAL(real64),INTENT(IN) :: tc, x(2), y, z
+        REAL(real64),INTENT(INOUT) :: s_layer, d_layer
+        REAL(real64) :: yyzz, tctc, theta, ay, rr, pm, xc
+        INTEGER :: i
+
+        yyzz = y**2 + z**2
+        tctc = tc**2
+        ay = abs(y)
+        if (tctc < yyzz) then
+            theta = sign(1.0d0, y) * (atan2(-x(2),ay) - atan2(-x(1),ay))
+            s_layer = s_layer + (tc-abs(z))*theta
+            d_layer = d_layer + sign(1.0d0, z)*theta
+            return
+        endif
+
+        do i = 1, 2
+            rr = x(i)**2 + yyzz
+            pm = sign(1.0d0, i - 1.5d0)
+            if (tctc < rr) then
+                xc = sign(1.0d0, x(i))*sqrt(tctc-yyzz)
+                theta = sign(1.0d0, y)*(atan2(-x(i), ay) - atan2(-xc, ay))
+                s_layer = s_layer + pm*(tc-abs(z))*theta
+                d_layer = d_layer + pm*sign(1.0d0,z)*theta
+            else
+                xc=x(i)
+            endif
+            call calc_sd_tconst(pm,xc,y,z,s_layer,d_layer)
+        end do
+    end subroutine calc_s_d_layer
 end module utils

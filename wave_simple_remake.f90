@@ -116,19 +116,22 @@ program main
     ! end do
 
     !!!! main !!!!
+    time_loop :&
     do time_step = 1, NUM_TIME_STEP
         print *,'time_step=',time_step
         time = TIME_INCREMENT*time_step
-        tc = time**WAVE_VELOCITY
+        tc = time*WAVE_VELOCITY  ! もとは**になっているが*の間違い...?
+
+        element_loop :&
         do elem_num = 1, NUM_ELEMENT
             do elem_point_num = 1, 3
                 do axis_num = 1, 3
                     element(axis_num, elem_point_num) = points(axis_num,elements(elem_point_num, elem_num))
                 end do
             end do
+
+            point_loop :&
             do point_num = 1, NUM_ELEMENT
-                s_layer = 0.0d0
-                d_layer = 0.0d0
                 do axis_num = 1, 3
                     center(axis_num) = 0.0d0
                     do elem_point_num = 1, 3
@@ -136,10 +139,31 @@ program main
                     end do
                     center(axis_num) = center(axis_num)/3.0d0
                 end do
-                CALL calc_xyz(center, element, yt(1,1,elem_num), yn(1,1,elem_num), yh(1,elem_num)&
+                CALL calc_xyz(center, element, yt(:,:,elem_num), yn(:,:,elem_num), yh(:,elem_num)&
                                 ,xce, yce, zce, ALMOST0)
-            end do
-        end do
-    end do
+                
+                ! 行列の係数を計算
+                s_layer = 0.0d0
+                d_layer = 0.0d0
+                if ( tc > abs(zce) ) then  ! t*c > |z|
+                    do axis_num = 1, 3
+                        if (abs(yce(axis_num)) > ALMOST0) then  ! |y| > 0
+                            call calc_s_d_layer(tc, xce(2*axis_num-1), yce(axis_num), zce, s_layer, d_layer)
+                        endif
+                    enddo
+                endif
+                ! store
+                if (boundary_condition(elem_num) == -1) then
+                    s_matrix(point_num,elem_num,time_step) = 0.25*s_layer/pi
+                    d_matrix(point_num,elem_num,time_step) = 0.25*d_layer/pi
+                else if (boundary_condition(elem_num) == 1) then
+                    s_matrix(point_num,elem_num,time_step) = -0.25*d_layer/pi
+                    d_matrix(point_num,elem_num,time_step) = -0.25*s_layer/pi
+                else
+                    write(*,*)'wrong b.c.'
+                    stop
+                endif
+            end do point_loop
+        end do element_loop
 
 end program main
