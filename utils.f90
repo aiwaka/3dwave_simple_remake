@@ -52,7 +52,7 @@ contains
             enddo
         enddo
 
-        ! calc n
+        ! calc h
         do i=1,3
             ip1=mod(i,3)+1
             ip2=mod(i+1,3)+1
@@ -73,7 +73,7 @@ contains
             do i=1,3
                 yn(i,j)=yn(i,j)/en
             enddo
-        enddo        
+        enddo
     end subroutine calc_tnh
 
     subroutine calc_xyz(point, elem, yt, yn, yh, x, y, z, ALMOST0)
