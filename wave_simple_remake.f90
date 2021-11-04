@@ -4,11 +4,11 @@ program main
     implicit none
     
     REAL(real64),PARAMETER :: PI = acos(-1.0_real64)
-    INTEGER,PARAMETER :: NUM_TIME_STEP = 50
+    INTEGER,PARAMETER :: NUM_TIME_STEP = 5
     REAL(real64),PARAMETER :: ALMOST0 = 1.0d-8
-    REAL(real64),PARAMETER :: WAVE_VELOCITY = 340.0d0
-    REAL(real64),PARAMETER :: WAVE_LENGTH = 0.34d0
-    REAL(real64),PARAMETER :: TIME_INCREMENT = 0.05d0
+    REAL(real64),PARAMETER :: WAVE_VELOCITY = 1.4d0
+    REAL(real64),PARAMETER :: WAVE_LENGTH = 0.25d0
+    REAL(real64),PARAMETER :: TIME_INCREMENT = 0.1d0
     ! REAL(real64) :: wvwv = WAVE_VELOCITY**2
     INTEGER :: NUM_POINT, NUM_ELEMENT
     REAL(real64) :: s_layer, d_layer
@@ -76,13 +76,7 @@ program main
         call calc_tnh(element, yt(1,1,elem_num), yn(1,1,elem_num), yh(1,elem_num))
 
         ! 三角形の重心を計算
-        do axis_num = 1, 3
-            center(axis_num) = 0.0d0
-            do elem_point_num = 1, 3
-                center(axis_num) = center(axis_num) + points(axis_num, elements(elem_point_num, elem_num))
-            end do
-            center(axis_num) = center(axis_num)/3.0d0
-        end do
+        center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
 
         temp = dot_product(direction, center)/WAVE_VELOCITY
         if (boundary_condition(elem_num) == 1) then  ! Dirichlet
@@ -127,13 +121,7 @@ program main
 
             point_loop :&
             do point_num = 1, NUM_ELEMENT
-                do axis_num = 1, 3
-                    center(axis_num) = 0.0d0
-                    do elem_point_num = 1, 3
-                        center(axis_num) = center(axis_num) + points(axis_num, elements(elem_point_num, point_num))
-                    end do
-                    center(axis_num) = center(axis_num)/3.0d0
-                end do
+                center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
                 CALL calc_xyz(center, element, yt(:,:,elem_num), yn(:,:,elem_num), yh(:,elem_num)&
                                 ,xce, yce, zce, ALMOST0)
                 
@@ -188,13 +176,7 @@ program main
         endif
 
         do elem_num = 1, NUM_ELEMENT
-            do axis_num = 1, 3
-                center(axis_num) = 0.0d0
-                do elem_point_num = 1, 3
-                    center(axis_num) = center(axis_num) + points(axis_num, elements(elem_point_num, elem_num))
-                end do
-                center(axis_num) = center(axis_num)/3.0d0
-            end do
+            center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
             temp = dot_product(direction, center)/WAVE_VELOCITY
             if (time > temp) then
                 b_vector(elem_num, time_step) =&
@@ -209,13 +191,8 @@ program main
             enddo
         enddo
         do elem_num = 1, NUM_ELEMENT
-            do axis_num = 1, 3
-                center(axis_num) = 0.0d0
-                do elem_point_num = 1, 3
-                    center(axis_num) = center(axis_num) + points(axis_num, elements(elem_point_num, elem_num))
-                end do
-                center(axis_num) = center(axis_num)/3.0d0
-            end do
+            center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
+            ! そのときの解を出力している
             ! write(20+time_step,*)center(3), b_vector(elem_num,1), elem_num
         enddo
         if (time_step == 1) then
@@ -227,13 +204,7 @@ program main
         ! 厳密解を作る
         do elem_num = 1, NUM_ELEMENT
             exact_v=0.
-            do axis_num = 1, 3
-                center(axis_num) = 0.0d0
-                do elem_point_num = 1, 3
-                    center(axis_num) = center(axis_num) + points(axis_num, elements(elem_point_num, elem_num))
-                end do
-                center(axis_num) = center(axis_num)/3.0d0
-            end do
+            center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
             temp = dot_product(direction, center)/WAVE_VELOCITY
             if (boundary_condition(elem_num) == 1) then ! Dirichlet
                 temp2 = dot_product(direction, yh(:,elem_num))
