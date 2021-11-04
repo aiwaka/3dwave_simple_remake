@@ -4,11 +4,11 @@ program main
     implicit none
     
     REAL(real64),PARAMETER :: PI = acos(-1.0_real64)
-    INTEGER,PARAMETER :: NUM_TIME_STEP = 5
+    INTEGER,PARAMETER :: NUM_TIME_STEP = 20
     REAL(real64),PARAMETER :: ALMOST0 = 1.0d-8
-    REAL(real64),PARAMETER :: WAVE_VELOCITY = 1.4d0
-    REAL(real64),PARAMETER :: WAVE_LENGTH = 0.25d0
-    REAL(real64),PARAMETER :: TIME_INCREMENT = 0.1d0
+    REAL(real64),PARAMETER :: WAVE_VELOCITY = 1.0d0
+    REAL(real64),PARAMETER :: WAVE_LENGTH = 1.0d0
+    REAL(real64),PARAMETER :: TIME_INCREMENT = 0.7d0
     ! REAL(real64) :: wvwv = WAVE_VELOCITY**2
     INTEGER :: NUM_POINT, NUM_ELEMENT
     REAL(real64) :: s_layer, d_layer
