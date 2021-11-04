@@ -16,7 +16,7 @@ program main
 
     REAL(real64),ALLOCATABLE :: points(:,:)  ! 点の3軸座標の配列
     INTEGER,ALLOCATABLE :: elements(:,:)  ! 三角形の点番号3つの配列
-    INTEGER :: point_num, elem_num, elem_num2, axis_num, elem_point_num, time_step, time_step2  ! 繰り返し用変数
+    INTEGER :: point_num, elem_num, elem_num2, axis_num, time_step, time_step2  ! 繰り返し用変数
     REAL(real64) :: element(3,3)  ! 三角形一つの座標を保持する
     REAL(real64) :: center(3)  ! 三角形の重心
     REAL(real64) :: xce(6), yce(3), zce
@@ -68,31 +68,37 @@ program main
     ! 名前付き構文と継続行構文を用いている
     make_boundary_condition :&
     do elem_num = 1, NUM_ELEMENT
-        do elem_point_num = 1, 3
-            do axis_num = 1, 3
-                element(axis_num, elem_point_num) = points(axis_num,elements(elem_point_num, elem_num))
-            end do
-        end do
-        call calc_tnh(element, yt(1,1,elem_num), yn(1,1,elem_num), yh(1,elem_num))
+        ! elem_num番の要素を取得
+        element(:,:) = points(:,elements(:, elem_num))
+        call calc_tnh(element, yt(:,:,elem_num), yn(:,:,elem_num), yh(:,elem_num))
 
-        ! 三角形の重心を計算
-        center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
+        ! 三角形の重心を計算（色々試している）
+        ! center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
+        center(:) = sum(element(:,:), dim=2)/3.0d0
+        ! do axis_num=1, 3
+        !     center(axis_num) = 0.0d0
+        !     center(axis_num) = center(axis_num) + points(axis_num,elements(1,elem_num))
+        !     center(axis_num) = center(axis_num) + points(axis_num,elements(2,elem_num))
+        !     center(axis_num) = center(axis_num) + points(axis_num,elements(3,elem_num))
+        !     center(axis_num) = center(axis_num)/3.0d0
+        ! enddo
 
+        ! tempは波がcenterにとどくまでの時間. それより早い時間ではelem_uは0.
         temp = dot_product(direction, center)/WAVE_VELOCITY
         if (boundary_condition(elem_num) == 1) then  ! Dirichlet
-            do time_step = 1, NUM_TIME_STEP
-                time = TIME_INCREMENT*time_step
-                elem_u(elem_num, time_step)=0.0d0
-                if (time > temp) then  ! 波が到達しているなら
-                    elem_u(elem_num, time_step) = 1.0d0 - cos(2.0d0*PI*(time - temp)/WAVE_LENGTH)
-                endif
-            enddo
+            ! do time_step = 1, NUM_TIME_STEP
+            !     time = TIME_INCREMENT*time_step
+            !     elem_u(elem_num, time_step)=0.0d0
+            !     if (time > temp) then  ! 波が到達しているなら
+            !         elem_u(elem_num, time_step) = 1.0d0 - cos(2.0d0*PI*(time - temp)/WAVE_LENGTH)
+            !     endif
+            ! enddo
         else if (boundary_condition(elem_num) == -1) then  ! Neumann
-            temp2 = dot_product(direction, yh(:,elem_num))
+            temp2 = dot_product(direction(:), yh(:,elem_num))
             temp2 = 2.0d0*PI*temp2/WAVE_VELOCITY/WAVE_LENGTH
             do time_step = 1, NUM_TIME_STEP
                 time = TIME_INCREMENT*time_step
-                elem_u(elem_num, time_step)=0.0d0
+                ! elem_u(elem_num, time_step)=0.0d0
                 if (time > temp) then
                     elem_u(elem_num, time_step) = -temp2*sin(2.0d0*PI*(time - temp)/WAVE_LENGTH)
                 endif
@@ -113,11 +119,7 @@ program main
 
         element_loop :&
         do elem_num = 1, NUM_ELEMENT
-            do elem_point_num = 1, 3
-                do axis_num = 1, 3
-                    element(axis_num, elem_point_num) = points(axis_num,elements(elem_point_num, elem_num))
-                end do
-            end do
+            element(:,:) = points(:,elements(:, elem_num))
 
             point_loop :&
             do point_num = 1, NUM_ELEMENT
