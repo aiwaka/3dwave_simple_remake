@@ -16,4 +16,6 @@ gfortran -g -O0 -o wave_simple_remake wave_simple_remake.f90 utils -I/usr/local/
 でコンパイルできる. あとは`./wave_simple_remake`などで実行.
 
 ## 出力されるもの
-* `mesh_gnup.dat`：扱っている境界を表す. gnuplotを起動し`splot 'mesh_gnup.dat' w l`で空間を確認できる（オリジナルでは法線も図示していたがまだ実装していない）.
+* `mesh_gnup.dat`：扱っている境界を表す. `gnuplot -p plot_domain.gp`とすれば色々設定して出力し空間を確認できる（オリジナルでは法線も図示していたがまだ実装していない）.
+* `fort.51~`：`50+時間ステップ数`のファイルに座標ごとの数値計算結果が出力される. `gnuplot -p -e "num=xx" plot_about_space.gp`とすると`num`に入れた番号のファイルの数値解と厳密解を重ねてプロットする.
+* `fort.40, 41`：適当な点での波の時間変化が出力される. `gnuplot -p plot_about_time.gp`でプロットされる.
