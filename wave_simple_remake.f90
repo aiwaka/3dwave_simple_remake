@@ -123,7 +123,7 @@ program main
 
             point_loop :&
             do point_num = 1, NUM_ELEMENT
-                center(:) = sum(points(:,elements(:,el_num)), dim=2)/3.0d0
+                center(:) = sum(points(:,elements(:,point_num)), dim=2)/3.0d0
                 CALL calc_xyz(center, element, yt(:,:,el_num), yn(:,:,el_num), yh(:,el_num)&
                                 ,xce, yce, zce, ALMOST0)
                 
