@@ -5,12 +5,12 @@ program main
     
     REAL(real64),PARAMETER :: PI = acos(-1.0_real64)
     INTEGER,PARAMETER :: NUM_TIME_STEP = 50
-    INTEGER,PARAMETER :: NUM_POINT = 252, NUM_ELEMENT = 500
     REAL(real64),PARAMETER :: ALMOST0 = 1.0d-8
     REAL(real64),PARAMETER :: WAVE_VELOCITY = 340.0d0
     REAL(real64),PARAMETER :: WAVE_LENGTH = 0.34d0
     REAL(real64),PARAMETER :: TIME_INCREMENT = 0.05d0
     ! REAL(real64) :: wvwv = WAVE_VELOCITY**2
+    INTEGER :: NUM_POINT, NUM_ELEMENT
     REAL(real64) :: s_layer, d_layer
     REAL(real64) :: tc
 
@@ -27,16 +27,24 @@ program main
 
     REAL(real64) :: direction(3) = [0.0d0, 0.0d0, 1.0d0]  ! 波の進行方向（単位ベクトル）
     REAL(real64) :: temp, temp2, time
-    INTEGER :: boundary_condition(NUM_ELEMENT)  ! 境界条件を要素ごとに設定する配列
-    INTEGER :: ipiv(NUM_ELEMENT)  ! lapackで解く際にピボットを保存する配列
+    INTEGER,ALLOCATABLE :: boundary_condition(:)  ! 境界条件を要素ごとに設定する配列
+    INTEGER,ALLOCATABLE :: ipiv(:)  ! lapackで解く際にピボットを保存する配列
     INTEGER :: dgesv_info
     REAL(real64) :: exact_v  ! 厳密解
+
+    ! メッシュのパラメータ読み込み
+    open(22, file="mesh/meshparam.h", status="old")
+    read(22,*)NUM_POINT, NUM_ELEMENT
+
+    ALLOCATE(boundary_condition(NUM_ELEMENT))
+    ALLOCATE(ipiv(NUM_ELEMENT))
 
     ALLOCATE(points(3,NUM_POINT))
     ALLOCATE(elements(3,NUM_ELEMENT))
     ALLOCATE(yt(3,3,NUM_ELEMENT))
     ALLOCATE(yn, source=yt)
     ALLOCATE(yh(3,NUM_ELEMENT))
+    ! 行列は0で埋めておく
     ALLOCATE(elem_u(NUM_ELEMENT, NUM_TIME_STEP), source=0.0d0)
     ALLOCATE(b_vector(NUM_ELEMENT, NUM_TIME_STEP), source=0.0d0)
     ALLOCATE(s_matrix(NUM_ELEMENT, NUM_ELEMENT, 0:NUM_TIME_STEP), source=0.0d0)
@@ -101,22 +109,6 @@ program main
         endif
     end do&
     make_boundary_condition
-
-    ! 先にメモリ空間を0で埋め確保しておく
-    ! 割り付け時に0埋めしておいたのでここでしなくても問題ないはず
-    ! do time_step = 1, NUM_TIME_STEP
-    !     do elem_num = 1, NUM_ELEMENT
-    !         b_vector(elem_num, time_step) = 0.0d0;
-    !     end do
-    ! end do
-    ! do time_step = 1, NUM_TIME_STEP
-    !     do elem_num = 1, NUM_ELEMENT
-    !         do elem_num2 = 1, NUM_ELEMENT
-    !             s_matrix(elem_num, elem_num2, time_step) = 0.0d0
-    !             d_matrix(elem_num, elem_num2, time_step) = 0.0d0
-    !         end do
-    !     end do
-    ! end do
 
     !!!! main !!!!
     time_loop :&
