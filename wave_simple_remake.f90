@@ -16,7 +16,7 @@ program main
 
     REAL(real64),ALLOCATABLE :: points(:,:)  ! 点の3軸座標の配列
     INTEGER,ALLOCATABLE :: elements(:,:)  ! 三角形の点番号3つの配列
-    INTEGER :: point_num, elem_num, elem_num2, axis_num, time_step, time_step2  ! 繰り返し用変数
+    INTEGER :: point_num, el_num, elem_num2, axis_num, time_step, time_step2  ! 繰り返し用変数
     REAL(real64) :: element(3,3)  ! 三角形一つの座標を保持する
     REAL(real64) :: center(3)  ! 三角形の重心
     REAL(real64) :: xce(6), yce(3), zce
@@ -57,9 +57,9 @@ program main
     do point_num = 1, NUM_POINT
         read(20,*) points(1, point_num), points(2, point_num), points(3, point_num)
     enddo
-    do elem_num = 1, NUM_ELEMENT
-        read(21,*) elements(1, elem_num), elements(3, elem_num), elements(2, elem_num)
-        boundary_condition(elem_num) = -1  ! 1: Dirichlet, -1: Neumann
+    do el_num = 1, NUM_ELEMENT
+        read(21,*) elements(1, el_num), elements(3, el_num), elements(2, el_num)
+        boundary_condition(el_num) = -1  ! 1: Dirichlet, -1: Neumann
     end do
 
     ! write mesh by gnuplot
@@ -67,40 +67,40 @@ program main
 
     ! 名前付き構文と継続行構文を用いている
     make_boundary_condition :&
-    do elem_num = 1, NUM_ELEMENT
+    do el_num = 1, NUM_ELEMENT
         ! elem_num番の要素を取得
-        element(:,:) = points(:,elements(:, elem_num))
-        call calc_tnh(element, yt(:,:,elem_num), yn(:,:,elem_num), yh(:,elem_num))
+        element(:,:) = points(:,elements(:, el_num))
+        call calc_tnh(element, yt(:,:,el_num), yn(:,:,el_num), yh(:,el_num))
 
         ! 三角形の重心を計算（色々試している）
-        ! center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
+        ! center(:) = sum(points(:,elements(:,el_num)), dim=2)/3.0d0
         center(:) = sum(element(:,:), dim=2)/3.0d0
         ! do axis_num=1, 3
         !     center(axis_num) = 0.0d0
-        !     center(axis_num) = center(axis_num) + points(axis_num,elements(1,elem_num))
-        !     center(axis_num) = center(axis_num) + points(axis_num,elements(2,elem_num))
-        !     center(axis_num) = center(axis_num) + points(axis_num,elements(3,elem_num))
+        !     center(axis_num) = center(axis_num) + points(axis_num,elements(1,el_num))
+        !     center(axis_num) = center(axis_num) + points(axis_num,elements(2,el_num))
+        !     center(axis_num) = center(axis_num) + points(axis_num,elements(3,el_num))
         !     center(axis_num) = center(axis_num)/3.0d0
         ! enddo
 
         ! tempは波がcenterにとどくまでの時間. それより早い時間ではelem_uは0.
         temp = dot_product(direction, center)/WAVE_VELOCITY
-        if (boundary_condition(elem_num) == 1) then  ! Dirichlet
+        if (boundary_condition(el_num) == 1) then  ! Dirichlet
             ! do time_step = 1, NUM_TIME_STEP
             !     time = TIME_INCREMENT*time_step
-            !     elem_u(elem_num, time_step)=0.0d0
+            !     elem_u(el_num, time_step)=0.0d0
             !     if (time > temp) then  ! 波が到達しているなら
-            !         elem_u(elem_num, time_step) = 1.0d0 - cos(2.0d0*PI*(time - temp)/WAVE_LENGTH)
+            !         elem_u(el_num, time_step) = 1.0d0 - cos(2.0d0*PI*(time - temp)/WAVE_LENGTH)
             !     endif
             ! enddo
-        else if (boundary_condition(elem_num) == -1) then  ! Neumann
-            temp2 = dot_product(direction(:), yh(:,elem_num))
+        else if (boundary_condition(el_num) == -1) then  ! Neumann
+            temp2 = dot_product(direction(:), yh(:,el_num))
             temp2 = 2.0d0*PI*temp2/WAVE_VELOCITY/WAVE_LENGTH
             do time_step = 1, NUM_TIME_STEP
                 time = TIME_INCREMENT*time_step
-                ! elem_u(elem_num, time_step)=0.0d0
+                ! elem_u(el_num, time_step)=0.0d0
                 if (time > temp) then
-                    elem_u(elem_num, time_step) = -temp2*sin(2.0d0*PI*(time - temp)/WAVE_LENGTH)
+                    elem_u(el_num, time_step) = -temp2*sin(2.0d0*PI*(time - temp)/WAVE_LENGTH)
                 endif
             enddo
         else
@@ -118,13 +118,13 @@ program main
         tc = time*WAVE_VELOCITY
 
         element_loop :&
-        do elem_num = 1, NUM_ELEMENT
-            element(:,:) = points(:,elements(:, elem_num))
+        do el_num = 1, NUM_ELEMENT
+            element(:,:) = points(:,elements(:, el_num))
 
             point_loop :&
             do point_num = 1, NUM_ELEMENT
-                center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
-                CALL calc_xyz(center, element, yt(:,:,elem_num), yn(:,:,elem_num), yh(:,elem_num)&
+                center(:) = sum(points(:,elements(:,el_num)), dim=2)/3.0d0
+                CALL calc_xyz(center, element, yt(:,:,el_num), yn(:,:,el_num), yh(:,el_num)&
                                 ,xce, yce, zce, ALMOST0)
                 
                 ! 行列の係数を計算
@@ -138,12 +138,12 @@ program main
                     enddo
                 endif
                 ! store
-                if (boundary_condition(elem_num) == -1) then
-                    s_matrix(point_num,elem_num,time_step) = 0.25*s_layer/PI
-                    d_matrix(point_num,elem_num,time_step) = 0.25*d_layer/PI
-                else if (boundary_condition(elem_num) == 1) then
-                    s_matrix(point_num,elem_num,time_step) = -0.25*d_layer/PI
-                    d_matrix(point_num,elem_num,time_step) = -0.25*s_layer/PI
+                if (boundary_condition(el_num) == -1) then
+                    s_matrix(point_num,el_num,time_step) = 0.25*s_layer/PI
+                    d_matrix(point_num,el_num,time_step) = 0.25*d_layer/PI
+                else if (boundary_condition(el_num) == 1) then
+                    s_matrix(point_num,el_num,time_step) = -0.25*d_layer/PI
+                    d_matrix(point_num,el_num,time_step) = -0.25*s_layer/PI
                 else
                     print *,'wrong b.c.'
                     stop
@@ -153,10 +153,10 @@ program main
 
         do time_step2=1,time_step
             do elem_num2=1,NUM_ELEMENT
-                do elem_num=1,NUM_ELEMENT
-                    b_vector(elem_num,time_step) = b_vector(elem_num,time_step)+&
-                                               (s_matrix(elem_num,elem_num2,time_step-time_step2+1)&
-                                                    -s_matrix(elem_num,elem_num2,time_step-time_step2))&
+                do el_num=1,NUM_ELEMENT
+                    b_vector(el_num,time_step) = b_vector(el_num,time_step)+&
+                                               (s_matrix(el_num,elem_num2,time_step-time_step2+1)&
+                                                    -s_matrix(el_num,elem_num2,time_step-time_step2))&
                                                         *elem_u(elem_num2,time_step2)
                 enddo
             enddo
@@ -166,10 +166,10 @@ program main
         if (time_step.ge.2) then
             do time_step2=2,time_step
                 do elem_num2=1,NUM_ELEMENT
-                    do elem_num=1,NUM_ELEMENT
-                        b_vector(elem_num,time_step) = b_vector(elem_num,time_step)&
-                            -(d_matrix(elem_num,elem_num2,time_step-time_step2+2)&
-                                -d_matrix(elem_num,elem_num2,time_step-time_step2+1))&
+                    do el_num=1,NUM_ELEMENT
+                        b_vector(el_num,time_step) = b_vector(el_num,time_step)&
+                            -(d_matrix(el_num,elem_num2,time_step-time_step2+2)&
+                                -d_matrix(el_num,elem_num2,time_step-time_step2+1))&
                                     *b_vector(elem_num2,time_step2-1)
                     enddo
                 enddo
@@ -177,25 +177,25 @@ program main
             enddo
         endif
 
-        do elem_num = 1, NUM_ELEMENT
-            center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
+        do el_num = 1, NUM_ELEMENT
+            center(:) = sum(points(:,elements(:,el_num)), dim=2)/3.0d0
             temp = dot_product(direction, center)/WAVE_VELOCITY
             if (time > temp) then
-                b_vector(elem_num, time_step) =&
-                            b_vector(elem_num, time_step) + 1.0d0 - cos(2.0d0*PI*(time-temp)/WAVE_LENGTH)
+                b_vector(el_num, time_step) =&
+                            b_vector(el_num, time_step) + 1.0d0 - cos(2.0d0*PI*(time-temp)/WAVE_LENGTH)
             endif
         enddo
 
         ! solver
         do elem_num2 = 1, NUM_ELEMENT
-            do elem_num = 1, NUM_ELEMENT
-                c_matrix(elem_num ,elem_num2) = d_matrix(elem_num, elem_num2, 1)
+            do el_num = 1, NUM_ELEMENT
+                c_matrix(el_num ,elem_num2) = d_matrix(el_num, elem_num2, 1)
             enddo
         enddo
-        do elem_num = 1, NUM_ELEMENT
-            center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
+        do el_num = 1, NUM_ELEMENT
+            center(:) = sum(points(:,elements(:,el_num)), dim=2)/3.0d0
             ! そのときの解を出力している
-            ! write(20+time_step,*)center(3), b_vector(elem_num,1), elem_num
+            ! write(20+time_step,*)center(3), b_vector(el_num,1), el_num
         enddo
         if (time_step == 1) then
             print *,'c_mat_ii=',c_matrix(1,1)
@@ -204,17 +204,17 @@ program main
         if (dgesv_info /= 0) print *,'INFO=',dgesv_info
 
         ! 厳密解を作る
-        do elem_num = 1, NUM_ELEMENT
+        do el_num = 1, NUM_ELEMENT
             exact_v=0.
-            center(:) = sum(points(:,elements(:,elem_num)), dim=2)/3.0d0
+            center(:) = sum(points(:,elements(:,el_num)), dim=2)/3.0d0
             temp = dot_product(direction, center)/WAVE_VELOCITY
-            if (boundary_condition(elem_num) == 1) then ! Dirichlet
-                temp2 = dot_product(direction, yh(:,elem_num))
+            if (boundary_condition(el_num) == 1) then ! Dirichlet
+                temp2 = dot_product(direction, yh(:,el_num))
                 temp2 = 2.0d0*PI*temp2/WAVE_VELOCITY/WAVE_LENGTH
                 if (time > temp) then
                     exact_v = -temp2*sin(2.0d0*PI*(time-temp)/WAVE_LENGTH)
                 endif
-            else if (boundary_condition(elem_num) == -1) then               ! Neumann
+            else if (boundary_condition(el_num) == -1) then               ! Neumann
                 if (time > temp) then
                     exact_v = 1.0d0-cos(2.0d0*PI*(time-temp)/WAVE_LENGTH)
                 endif
@@ -222,9 +222,9 @@ program main
                 print *,'wrong b.c.'
                 stop
             endif
-            write(50+time_step,*)center(3), b_vector(elem_num,time_step), exact_v, elem_num
-            if (elem_num == 1) write(40,*)time, b_vector(1,time_step), exact_v, center(3)
-            if (elem_num == 37) write(41,*)time, b_vector(37,time_step), exact_v, center(3)
+            write(50+time_step,*)center(3), b_vector(el_num,time_step), exact_v, el_num
+            if (el_num == 1) write(40,*)time, b_vector(1,time_step), exact_v, center(3)
+            if (el_num == 37) write(41,*)time, b_vector(37,time_step), exact_v, center(3)
         enddo
     end do time_loop
 
