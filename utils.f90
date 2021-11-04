@@ -2,7 +2,7 @@ module utils
     use,intrinsic :: iso_fortran_env
     implicit none
 contains
-    subroutine plot(NUM_ELEMENT, points, elements)
+    subroutine space_plot(NUM_ELEMENT, points, elements)
         INTEGER,INTENT(IN) :: NUM_ELEMENT, elements(:,:)
         REAL(real64),INTENT(IN) :: points(:,:)
         
@@ -32,7 +32,7 @@ contains
         enddo
         ! close(21)
         close(20)
-    end subroutine plot
+    end subroutine space_plot
 
     subroutine calc_tnh(element, yt, yn, yh)
         REAL(real64),INTENT(IN) :: element(3,3)

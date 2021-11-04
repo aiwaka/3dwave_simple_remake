@@ -4,7 +4,7 @@ program main
     implicit none
     
     REAL(real64),PARAMETER :: PI = acos(-1.0_real64)
-    INTEGER,PARAMETER :: NUM_TIME_STEP = 5
+    INTEGER,PARAMETER :: NUM_TIME_STEP = 50
     INTEGER,PARAMETER :: NUM_POINT = 252, NUM_ELEMENT = 500
     REAL(real64),PARAMETER :: ALMOST0 = 1.0d-8
     REAL(real64),PARAMETER :: WAVE_VELOCITY = 340.0d0
@@ -55,7 +55,7 @@ program main
     end do
 
     ! write mesh by gnuplot
-    call plot(NUM_ELEMENT, points, elements)
+    call space_plot(NUM_ELEMENT, points, elements)
 
     ! 名前付き構文と継続行構文を用いている
     make_boundary_condition :&
@@ -123,7 +123,7 @@ program main
     do time_step = 1, NUM_TIME_STEP
         print *,'time_step=',time_step
         time = TIME_INCREMENT*time_step
-        tc = time*WAVE_VELOCITY  ! もとは**になっているが*の間違い...?
+        tc = time*WAVE_VELOCITY
 
         element_loop :&
         do elem_num = 1, NUM_ELEMENT
@@ -163,7 +163,7 @@ program main
                     s_matrix(point_num,elem_num,time_step) = -0.25*d_layer/PI
                     d_matrix(point_num,elem_num,time_step) = -0.25*s_layer/PI
                 else
-                    write(*,*)'wrong b.c.'
+                    print *,'wrong b.c.'
                     stop
                 endif
             end do point_loop
@@ -178,7 +178,7 @@ program main
                                                         *elem_u(elem_num2,time_step2)
                 enddo
             enddo
-            write(*,*)'+S(',time_step-time_step2+1,'-',time_step-time_step2,')*q(',time_step2,')'
+            print *,'+S(',time_step-time_step2+1,'-',time_step-time_step2,')*q(',time_step2,')'
         enddo
 
         if (time_step.ge.2) then
@@ -191,7 +191,7 @@ program main
                                     *b_vector(elem_num2,time_step2-1)
                     enddo
                 enddo
-                write(*,*)'-D(',time_step-time_step2+2,'-',time_step-time_step2+1,')*u(',time_step2-1,')'
+                print *,'-D(',time_step-time_step2+2,'-',time_step-time_step2+1,')*u(',time_step2-1,')'
             enddo
         endif
 
@@ -224,7 +224,7 @@ program main
                 end do
                 center(axis_num) = center(axis_num)/3.0d0
             end do
-            write(20+time_step,*)center(3), b_vector(elem_num,1), elem_num
+            ! write(20+time_step,*)center(3), b_vector(elem_num,1), elem_num
         enddo
         if (time_step == 1) then
             print *,'c_mat_ii=',c_matrix(1,1)
@@ -232,6 +232,7 @@ program main
         call dgesv(NUM_ELEMENT, 1, c_matrix, NUM_ELEMENT, ipiv, b_vector(1, time_step), NUM_ELEMENT, dgesv_info)
         if (dgesv_info /= 0) print *,'INFO=',dgesv_info
 
+        ! 厳密解を作る
         do elem_num = 1, NUM_ELEMENT
             exact_v=0.
             do axis_num = 1, 3
@@ -253,13 +254,13 @@ program main
                     exact_v = 1.0d0-cos(2.0d0*PI*(time-temp)/WAVE_LENGTH)
                 endif
             else
-                write(*,*)'wrong b.c.'
+                print *,'wrong b.c.'
                 stop
             endif
-            write(50+time_step,*)center(3),b_vector(elem_num,time_step),exact_v,elem_num
-            if (elem_num.eq.1) write(40,*)time,b_vector(1,time_step),exact_v,center(3)
-            if (elem_num.eq.37) write(41,*)time,b_vector(37,time_step),exact_v,center(3)
-         enddo
+            write(50+time_step,*)center(3), b_vector(elem_num,time_step), exact_v, elem_num
+            if (elem_num == 1) write(40,*)time, b_vector(1,time_step), exact_v, center(3)
+            if (elem_num == 37) write(41,*)time, b_vector(37,time_step), exact_v, center(3)
+        enddo
     end do time_loop
 
 end program main
