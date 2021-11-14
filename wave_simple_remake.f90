@@ -2,7 +2,7 @@ program main
     use,intrinsic :: iso_fortran_env
     use utils
     implicit none
-    
+
     REAL(real64),PARAMETER :: PI = acos(-1.0d0)
     INTEGER,PARAMETER :: NUM_TIME_STEP = 20
     REAL(real64),PARAMETER :: ALMOST0 = 1.0d-8
@@ -36,6 +36,7 @@ program main
     ! メッシュのパラメータ読み込み
     open(22, file="mesh/meshparam.h", status="old")
     read(22,*)NUM_POINT, NUM_ELEMENT
+    close(22)
 
     ALLOCATE(boundary_condition(NUM_ELEMENT))
     ALLOCATE(ipiv(NUM_ELEMENT))
@@ -131,7 +132,7 @@ program main
                 center(:) = sum(points(:,elements(:,el_num)), dim=2)/3.0d0
                 CALL calc_xyz(center(:), element(:,:), yt(:,:,el_num2),&
                     yn(:,:,el_num2), yh(:,el_num2), xce(:), yce(:), zce, ALMOST0)
-                
+
                 ! 行列の係数を計算
                 if ( tc > abs(zce) ) then  ! t*c > |z|
                     do axis_num = 1, 3
